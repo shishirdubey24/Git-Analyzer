@@ -1,0 +1,12 @@
+# Frontend
+frontend/node_modules
+frontend/dist
+frontend/dist-ssr
+
+# Backend (future)
+backend/node_modules
+backend/.env
+
+# Common
+*.log
+.DS_Store
