@@ -46,8 +46,9 @@ export const detectContext = async (repoPath) => {
         if (IGNORED_DIRS.has(entry.name)) continue;
 
         // Heuristic: Source Root Detection
-        if (entry.name === "src" && !context.sourceRoot) {
-          context.sourceRoot = "src";
+        const commonSourceRoots = ["src", "app", "lib", "source"];
+        if (commonSourceRoots.includes(entry.name.toLowerCase()) && !context.sourceRoot) {
+          context.sourceRoot = entry.name;
         }
         await quickWalk(fullPath);
       } else {
@@ -93,6 +94,9 @@ export const detectContext = async (repoPath) => {
         "[ContextAnalyzer] Found Dependencies:",
         Object.keys(allDeps),
       ); // Debug Log
+
+      // ADD THIS: Store all keys
+      context.dependencies = Object.keys(allDeps);
 
       // Hints Logic
       if (allDeps["react"]) context.frameworkHints.push("React");
