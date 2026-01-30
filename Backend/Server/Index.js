@@ -1,10 +1,15 @@
 import express from "express";
+import cors from "cors"; // <--- 1. Import cors
 import GitRouter from "../Router/GitRouter.js";
+
 const app = express();
+
+// --- 2. Add CORS Middleware ---
+app.use(cors());
 
 app.use(express.json());
 
-//NOw our routing setup would come here;
+// Routing setup
 app.use("/api", GitRouter);
 
 app.get("/", (req, res) => {
@@ -13,5 +18,5 @@ app.get("/", (req, res) => {
 
 const PORT = 8080;
 app.listen(PORT, () => {
-  console.log(`Server is running on PORT ${PORT}`);
+  console.log(`Server is running on http://localhost:${PORT}`);
 });
