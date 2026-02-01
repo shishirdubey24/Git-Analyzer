@@ -21,8 +21,6 @@ export const checkEntryHygiene = async (entryPaths) => {
         issues.push("Logic Leak: Network calls found in entry point.");
       }
       if (content.includes("useEffect") && !content.includes("<App")) {
-        // Allow useEffect only if it's wrapping the App (rare but passable),
-        // but generally main.jsx shouldn't have hooks.
         issues.push("Logic Leak: React Hooks found in entry point.");
       }
 
