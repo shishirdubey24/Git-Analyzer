@@ -1,61 +1,60 @@
-//import { Url } from "url";
-import path from "path";
-import { fileURLToPath } from "url";
 import { exec } from "child_process";
 import util from "util";
+import fs from "fs";
+import { analyzeRepo } from "../Analysis/Orchestrator.js";
+import { scheduleCleanup } from "../Utils/FileCleanup.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 const execPromise = util.promisify(exec);
+
 export const Gitclone = async (req, res) => {
-  let { repoUrl } = req.body;
+  // 1. Get prepared data from Middleware
+  const { fullUrl, localPath, tempDir } = req.repoContext;
 
-  // Check if url exist or not
-  if (!repoUrl) {
-    return res.status(400).json({ error: "Repo Url is missing" });
-  }
-  // remove the white spaces from url
-  repoUrl = repoUrl.trim();
+  console.log(`>>> [Controller] Processing: ${fullUrl}`);
 
-  //Check for domain and protocol
-  // if (!repoUrl.includes("github.com")) {
-  //  repoUrl = `htpps://github.com/${repoUrl}`;
-  //}
-  if (!repoUrl.startsWith("http")) {
-    repoUrl = `https://${repoUrl}`;
-  }
-
-  //extract the pathname
   try {
-    const data = new URL(repoUrl);
-    const repoPath = data.pathname;
-    console.log("repo path is", repoPath);
-    //Build the full url
-    const fullUrl = `https://github.com${repoPath}`;
+    // 2. Ensure Temp Directory Exists
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
 
-    // Now we need to clone the git repo.
-    const uniqueID = Date.now();
-    const repoName = repoPath.split("/").pop();
-    const LocalPath = path.join(
-      __dirname,
-      "..",
-      "temp",
-      `${uniqueID}-${repoName}`,
-    );
-    console.log("Cloning from:", fullUrl);
-    console.log("the local repo is", LocalPath);
+    // 3. Clone Logic (With Robust Race Condition Handling)
+    if (fs.existsSync(localPath)) {
+      console.log(`[Cache Hit] Using existing repo.`);
+    } else {
+      console.log(`[Cache Miss] Cloning new repo...`);
+      try {
+        await execPromise(`git clone --depth 1 ${fullUrl} "${localPath}"`);
+      } catch (cloneError) {
+        // --- THE FIX ---
+        // Normalize error to lowercase and check for ALL variations of "Folder Exists"
+        const msg = cloneError.message.toLowerCase();
 
-    await execPromise(`git clone --depth 1 ${fullUrl} ${LocalPath}`);
-    //send a response back to the client at current for testing pusrp[ose]
+        const isRaceCondition =
+          msg.includes("already exists") ||
+          msg.includes("file exists") || // <--- Handles your specific error
+          msg.includes("destination path");
 
+        if (!isRaceCondition) {
+          throw cloneError; // It's a real error (e.g. GitHub down), so crash.
+        }
+        console.log(
+          "⚠️ Race Condition ignored: Folder exists now. Proceeding...",
+        );
+      }
+    }
+
+    // 4. Run Analysis
+    const analysisResult = await analyzeRepo(localPath);
+
+    // 5. Send Success Response
     res.status(200).json({
       Success: "True",
-      receivedURL: req.body,
-      ProcessedURL: fullUrl,
-      LocalPath: LocalPath,
+      Analysis: analysisResult,
     });
   } catch (error) {
-    return res.status(400).json({ error: "Invalid URL provided" });
-    console.log(error);
+    console.error("CRITICAL ERROR:", error.message);
+    res.status(500).json({ error: "Analysis Failed", details: error.message });
+  } finally {
+    // 6. Trigger Cleanup
+    scheduleCleanup(localPath);
   }
 };
