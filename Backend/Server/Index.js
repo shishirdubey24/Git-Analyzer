@@ -28,6 +28,17 @@ app.use(
 
 app.use(express.json());
 
+app.use((req, res, next) => {
+  console.log(`[REQUEST] ${req.method} ${req.path}`);
+  console.log("Body:", req.body);
+  next();
+});
+app.use((req, res, next) => {
+  console.log(`[REQUEST] ${req.method} ${req.path}`);
+  console.log("Body:", req.body);
+  next();
+});
+
 app.use("/api", GitRouter);
 
 app.get("/", (req, res) => {
