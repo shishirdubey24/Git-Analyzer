@@ -11,11 +11,9 @@ import { generateSummary } from "./Steps/SummeryGenerator.js";
 export const analyzeRepo = async (repoPath) => {
   console.log(`[Orchestrator] Starting analysis for: ${repoPath}`);
 
-  // PHASE 4: Context Detection (The Eyes)
   const context = await detectContext(repoPath);
   console.log("[Orchestrator] Phase 4 Complete: Context Detected");
 
-  // PHASE 5: Structure Mapping
   console.log("[Orchestrator] Starting Phase 5: Structure Mapping...");
   const structure = await mapStructure(repoPath);
   console.log(
