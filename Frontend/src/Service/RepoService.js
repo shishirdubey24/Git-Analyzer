@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Change this if your backend uses a different port.
-const API_BASE_URL = "http://localhost:8080";
+const API_BASE_URL = "https://git-analyzer-u3b8.onrender.com/";
 
 export const analyzeRepository = async (repoUrl) => {
   try {
