@@ -76,7 +76,6 @@ export const analyzeRepo = async (repoPath) => {
     },
   };
 
-  // PHASE 12: THE SCORECARD (The "Product" Layer)
   console.log("[Orchestrator] Generating Final Scorecard...");
   const summary = generateSummary(rawAnalysis);
 

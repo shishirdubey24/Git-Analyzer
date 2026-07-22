@@ -2,7 +2,6 @@ import path from "path";
 
 const MAX_FILES = 15;
 
-// Files we MUST read if they exist
 const CRITICAL_FILES = new Set([
   "package.json",
   "tsconfig.json",
@@ -12,7 +11,6 @@ const CRITICAL_FILES = new Set([
   "README.md",
 ]);
 
-// Helper to flatten the tree into a simple list of files
 const flattenTree = (nodes, fileList = []) => {
   for (const node of nodes) {
     if (node.type === "file") {
@@ -29,18 +27,15 @@ export const sampleFiles = (structure, context = {}) => {
   const selectedFiles = [];
   const sourceRoot = context.sourceRoot || "src";
 
-  // 1.  Critical Config Files
   const critical = allFiles.filter((f) =>
     CRITICAL_FILES.has(f.name.toLowerCase()),
   );
   selectedFiles.push(...critical);
 
-  // 2 Entry Points (Detected in Phase 5)
   const entryPaths = new Set(structure.entryPoints);
   const entries = allFiles.filter((f) => entryPaths.has(f.path));
   selectedFiles.push(...entries);
 
-  // 3 Source Code
   const commonCodeDirs = [
     "controllers",
     "routes",

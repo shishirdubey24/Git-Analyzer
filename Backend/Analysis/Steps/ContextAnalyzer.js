@@ -24,7 +24,7 @@ const IGNORED_DIRS = new Set([
 
 export const detectContext = async (repoPath) => {
   const context = {
-    totalFiles: 0, // Fixed: We will increment this properly now
+    totalFiles: 0,
     primaryLanguage: "Unknown",
     frameworkHints: [],
     sourceRoot: "",
@@ -47,12 +47,15 @@ export const detectContext = async (repoPath) => {
 
         // Heuristic: Source Root Detection
         const commonSourceRoots = ["src", "app", "lib", "source"];
-        if (commonSourceRoots.includes(entry.name.toLowerCase()) && !context.sourceRoot) {
+        if (
+          commonSourceRoots.includes(entry.name.toLowerCase()) &&
+          !context.sourceRoot
+        ) {
           context.sourceRoot = entry.name;
         }
         await quickWalk(fullPath);
       } else {
-        // --- FIX IS HERE ---
+       
         context.totalFiles++;
         // -------------------
 
