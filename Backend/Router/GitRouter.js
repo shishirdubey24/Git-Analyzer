@@ -4,7 +4,6 @@ import { validateAndPrepare } from "../Middleware/RepoValidator.js";
 
 const router = express.Router();
 
-// Chain: Validate input -> Then run Controller
 router.post("/git", validateAndPrepare, Gitclone);
 
 export default router;

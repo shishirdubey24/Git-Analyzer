@@ -12,17 +12,15 @@ export const validateAndPrepare = (req, res, next) => {
       return res.status(400).json({ error: "Repo URL is missing" });
     }
 
-    // 1. Clean Input
     let cleanUrl = repoUrl.trim().replace(/['"]+/g, "").replace(/\/$/, "");
-
-    // 2. Protocol Fix
+    
     if (!cleanUrl.startsWith("http")) {
       cleanUrl = cleanUrl.includes("github.com")
         ? `https://${cleanUrl}`
         : `https://github.com/${cleanUrl}`;
     }
 
-    // 3. Validation
+    
     const urlObj = new URL(cleanUrl);
     if (!urlObj.hostname.includes("github.com")) {
       return res
@@ -30,7 +28,7 @@ export const validateAndPrepare = (req, res, next) => {
         .json({ error: "Only GitHub repositories are supported." });
     }
 
-    // 4. Path Calculation
+    
     const fullUrl = urlObj.href;
     const repoPath = urlObj.pathname;
     const folderName = repoPath.replace(/^\//, "").replace(/\//g, "-");
@@ -39,7 +37,7 @@ export const validateAndPrepare = (req, res, next) => {
     const tempDir = path.join(__dirname, "..", "temp");
     const localPath = path.join(tempDir, folderName);
 
-    // 5. Attach to Request Object (So Controller can use it)
+    //  Attach to Request Object (So Controller can use it)
     req.repoContext = {
       fullUrl,
       folderName,
@@ -47,7 +45,7 @@ export const validateAndPrepare = (req, res, next) => {
       tempDir,
     };
 
-    next(); // Pass control to the Controller
+    next();
   } catch (error) {
     console.error("[Middleware Error]", error.message);
     return res.status(400).json({ error: "Invalid URL provided" });
