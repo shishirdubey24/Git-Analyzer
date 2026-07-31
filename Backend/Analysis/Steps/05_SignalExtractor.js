@@ -5,6 +5,7 @@ import {
   SIGNAL_CATEGORIES,
   SIGNAL_METADATA,
 } from "../Registries/SignalRules.js";
+import { FRAMEWORK_ALIASES } from "../Registries/TechStackRules.js";
 
 /**
  * Language-aware comment stripper.
@@ -29,9 +30,6 @@ export const stripComments = (content, ext) => {
   return clean;
 };
 
-/**
- * Checks if code is minified or auto-generated.
- */
 export const isMinifiedOrGenerated = (content) => {
   if (!content) return false;
   const lines = content.split("\n");
@@ -43,41 +41,68 @@ export const isMinifiedOrGenerated = (content) => {
 };
 
 /**
- * Calculates confidence score for a detected signal based on match count & import presence.
+ * Normalizes framework strings using registry data (FRAMEWORK_ALIASES).
+ * Completely technology-agnostic algorithm.
+ */
+export const isFrameworkAligned = (signalFramework, detectedFrameworks = []) => {
+  if (!signalFramework || !detectedFrameworks || detectedFrameworks.length === 0) {
+    return false;
+  }
+
+  const sigNorm = signalFramework.toLowerCase();
+  const allowedTokens = FRAMEWORK_ALIASES[sigNorm] || [sigNorm];
+
+  return detectedFrameworks.some((df) => {
+    const dfLower = df.toLowerCase();
+    return allowedTokens.some(
+      (token) => dfLower.includes(token) || token.includes(dfLower),
+    );
+  });
+};
+
+/**
+ * Calculates confidence score for a detected signal based on base weight, count & framework alignment.
  */
 export const calculateSignalConfidence = (
   patternName,
   count,
-  hasImportHint,
+  hasFrameworkAlignment = false,
 ) => {
   const meta = SIGNAL_METADATA[patternName] || {};
   let confidence = meta.weight || 0.75;
 
-  if (hasImportHint) {
-    confidence = Math.min(1.0, confidence + 0.2);
+  if (hasFrameworkAlignment) {
+    confidence += 0.15;
   }
 
   if (count > 2) {
-    confidence = Math.min(1.0, confidence + 0.1);
-  } else if (count === 1 && !meta.isImport) {
-    confidence = Math.max(0.5, confidence - 0.1);
+    confidence += 0.10;
+  } else if (count === 1 && !hasFrameworkAlignment) {
+    confidence -= 0.05;
   }
 
-  return parseFloat(confidence.toFixed(2));
+  return parseFloat(Math.min(1.0, Math.max(0.5, confidence)).toFixed(2));
 };
 
 /**
  * Step 5: Multi-Language SignalExtractor
  * Reads sampled files, strips comments according to language syntax,
- * detects signal frequencies, framework hints from imports, and assigns confidence scores.
+ * detects implementation signal frequencies, correlates signals with Step 2 framework evidence,
+ * and assigns targeted confidence scores using relative path keying.
  */
-export const extractSignals = async (filePaths = []) => {
+export const extractSignals = async (
+  filePaths = [],
+  dependencies = {},
+  repoRoot = "",
+) => {
   const fileSignals = {};
   const signalTotals = {};
   const detectedSignals = {};
   const confidenceSumMap = {};
   const confidenceCountMap = {};
   const fileLevelSummary = {};
+
+  const detectedFrameworks = dependencies.detectedFrameworks || [];
 
   for (const filePath of filePaths) {
     try {
@@ -88,23 +113,11 @@ export const extractSignals = async (filePaths = []) => {
 
       const ext = path.extname(filePath).toLowerCase();
       const cleanContent = stripComments(rawContent, ext);
-      const fileName = path.basename(filePath);
+      const relKey = repoRoot
+        ? path.relative(repoRoot, filePath).replace(/\\/g, "/")
+        : filePath.replace(/\\/g, "/");
       const fileSignalDetails = [];
       const fileSignalNames = [];
-
-      // Detect import framework hints first
-      const importSignalsFound = new Set();
-      for (const [patternName, meta] of Object.entries(SIGNAL_METADATA)) {
-        if (meta.isImport) {
-          const regex = SIGNAL_PATTERNS[patternName];
-          if (regex) {
-            regex.lastIndex = 0;
-            if (regex.test(cleanContent)) {
-              importSignalsFound.add(patternName);
-            }
-          }
-        }
-      }
 
       for (const [patternName, regex] of Object.entries(SIGNAL_PATTERNS)) {
         regex.lastIndex = 0;
@@ -114,10 +127,15 @@ export const extractSignals = async (filePaths = []) => {
           const category = SIGNAL_CATEGORIES[patternName] || "General";
           const meta = SIGNAL_METADATA[patternName] || {};
 
+          const hasFrameworkAlignment = isFrameworkAligned(
+            meta.framework,
+            detectedFrameworks,
+          );
+
           const confidence = calculateSignalConfidence(
             patternName,
             count,
-            importSignalsFound.has(patternName) || importSignalsFound.size > 0,
+            hasFrameworkAlignment,
           );
 
           fileSignalNames.push(patternName);
@@ -126,7 +144,7 @@ export const extractSignals = async (filePaths = []) => {
             category,
             count,
             confidence,
-            isImport: !!meta.isImport,
+            frameworkAlignment: hasFrameworkAlignment,
           });
 
           signalTotals[patternName] = (signalTotals[patternName] || 0) + count;
@@ -138,8 +156,8 @@ export const extractSignals = async (filePaths = []) => {
       }
 
       if (fileSignalNames.length > 0) {
-        fileSignals[fileName] = fileSignalNames;
-        detectedSignals[filePath] = fileSignalDetails;
+        fileSignals[relKey] = fileSignalNames;
+        detectedSignals[relKey] = fileSignalDetails;
 
         const categoryCounts = {};
         fileSignalDetails.forEach((d) => {
@@ -156,7 +174,7 @@ export const extractSignals = async (filePaths = []) => {
           }
         }
 
-        fileLevelSummary[fileName] = {
+        fileLevelSummary[relKey] = {
           signalsCount: fileSignalNames.length,
           primaryCategory: primaryCat,
           totalHits: fileSignalDetails.reduce((a, b) => a + b.count, 0),
