@@ -1,27 +1,24 @@
 /**
  * SignalRules.js
- * Multi-language regex rules for code signal detection.
+ * Multi-language regex rules for code implementation signal detection.
+ * Strictly focused on code constructs and usage patterns (no framework imports).
  */
 
 export const SIGNAL_PATTERNS = {
   // --- UI & FRONTEND ---
   useState: /useState\s*\(/g,
   useEffect: /useEffect\s*\(/g,
-  "React Import": /import\s+.*from\s+['"]react['"]/g,
   Redux: /(useSelector|useDispatch|createStore|configureStore)/g,
   "Vue Composition": /(ref\(|reactive\(|computed\(|defineComponent)/g,
   "Angular Component": /@Component\s*\(/g,
   Tailwind: /(className=["'].*["']|@apply\s+)/g,
 
   // --- API & ROUTING ---
-  "Express Route": /(router\.(get|post|put|delete|patch)|app\.(get|post|put|delete|patch))\s*\(/g,
-  "Express Import": /require\(['"]express['"]\)|import\s+.*from\s+['"]express['"]/g,
-  "Python API Route": /@(app|router|api_view)\.(get|post|put|delete|patch|route)\s*\(/g,
-  "FastAPI/Flask Import": /(from\s+fastapi\s+import|from\s+flask\s+import|import\s+fastapi|import\s+flask)/g,
+  "Express / NestJS Route": /(router\.(get|post|put|delete|patch)|app\.(get|post|put|delete|patch)|@(Get|Post|Put|Delete|Patch|All)\s*\()/g,
+  "Python API Route": /@([a-zA-Z0-9_]+\.)?(get|post|put|delete|patch|route)\s*\(/g,
   "Django View": /(def\s+(get|post|put|delete)\s*\(self,\s*request|class\s+\w+\((APIView|View|ViewSet)\))/g,
   "Spring Controller Route": /@(Get|Post|Put|Delete|Request)Mapping|@RestController|@Controller/g,
   "Go Route": /\.(GET|POST|PUT|DELETE|Handle|HandleFunc|Group)\s*\(/g,
-  "Gin/Echo Import": /(github\.com\/gin-gonic\/gin|labstack\/echo|gofiber\/fiber)/g,
   "Rust Actix Route": /#\[(get|post|put|delete|route)\s*\(.*\)\]/g,
   "PHP Route": /Route::(get|post|put|delete|match|resource)\s*\(/g,
   "Ruby Rails Route": /(get|post|put|delete|resources)\s+:[a-zA-Z0-9_]+/g,
@@ -52,20 +49,16 @@ export const SIGNAL_PATTERNS = {
 export const SIGNAL_CATEGORIES = {
   useState: "UI",
   useEffect: "UI",
-  "React Import": "UI",
   Redux: "State Management",
   "Vue Composition": "UI",
   "Angular Component": "UI",
   Tailwind: "UI",
 
-  "Express Route": "API Logic",
-  "Express Import": "API Logic",
+  "Express / NestJS Route": "API Logic",
   "Python API Route": "API Logic",
-  "FastAPI/Flask Import": "API Logic",
   "Django View": "API Logic",
   "Spring Controller Route": "API Logic",
   "Go Route": "API Logic",
-  "Gin/Echo Import": "API Logic",
   "Rust Actix Route": "API Logic",
   "PHP Route": "API Logic",
   "Ruby Rails Route": "API Logic",
@@ -90,18 +83,37 @@ export const SIGNAL_CATEGORIES = {
 };
 
 export const SIGNAL_METADATA = {
-  "Express Import": { isImport: true, framework: "Express", weight: 0.9 },
-  "FastAPI/Flask Import": { isImport: true, framework: "FastAPI / Flask", weight: 0.9 },
-  "Gin/Echo Import": { isImport: true, framework: "Gin / Echo", weight: 0.9 },
-  "React Import": { isImport: true, framework: "React", weight: 0.9 },
-  "Express Route": { isImport: false, weight: 0.85 },
-  "Python API Route": { isImport: false, weight: 0.85 },
-  "Django View": { isImport: false, weight: 0.85 },
-  "Spring Controller Route": { isImport: false, weight: 0.85 },
-  "Go Route": { isImport: false, weight: 0.85 },
-  "Mongoose Schema": { isImport: false, weight: 0.85 },
-  "Django Model": { isImport: false, weight: 0.85 },
-  "SQLAlchemy Model": { isImport: false, weight: 0.85 },
-  "Spring Entity": { isImport: false, weight: 0.85 },
-};
+  useState: { framework: "React", weight: 0.85 },
+  useEffect: { framework: "React", weight: 0.85 },
+  Redux: { framework: "React", weight: 0.80 },
+  "Vue Composition": { framework: "Vue.js", weight: 0.85 },
+  "Angular Component": { framework: "Angular", weight: 0.85 },
+  Tailwind: { framework: "Tailwind CSS", weight: 0.75 },
 
+  "Express / NestJS Route": { framework: "Express", weight: 0.85 },
+  "Python API Route": { framework: "FastAPI", weight: 0.85 },
+  "Django View": { framework: "Django", weight: 0.85 },
+  "Spring Controller Route": { framework: "Spring Boot", weight: 0.85 },
+  "Go Route": { framework: "Gin", weight: 0.85 },
+  "Rust Actix Route": { framework: "Actix Web", weight: 0.85 },
+  "PHP Route": { framework: "Laravel", weight: 0.85 },
+  "Ruby Rails Route": { framework: "Ruby on Rails", weight: 0.85 },
+  "C# Controller Route": { framework: "ASP.NET", weight: 0.85 },
+
+  "Mongoose Schema": { framework: "MongoDB / Mongoose", weight: 0.85 },
+  "Django Model": { framework: "Django", weight: 0.85 },
+  "SQLAlchemy Model": { framework: "SQLAlchemy", weight: 0.85 },
+  "Spring Entity": { framework: "Hibernate", weight: 0.85 },
+  "Go GORM Model": { framework: "GORM", weight: 0.85 },
+  "SQL Query": { weight: 0.75 },
+  "Prisma Query": { framework: "Prisma", weight: 0.85 },
+  "Entity Framework C#": { framework: "Entity Framework", weight: 0.85 },
+
+  Authentication: { weight: 0.80 },
+  "Hardcoded Secrets": { weight: 0.90 },
+  "Console Log": { weight: 0.60 },
+  "Python Print": { weight: 0.60 },
+  "Java System Output": { weight: 0.60 },
+  "Go Print": { weight: 0.60 },
+  TODO: { weight: 0.50 },
+};

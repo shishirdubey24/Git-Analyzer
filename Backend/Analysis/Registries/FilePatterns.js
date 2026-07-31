@@ -191,3 +191,166 @@ export const FOLDER_INTENT_MAP = {
   settings: "Config",
 };
 
+export const FILENAME_ROLE_PATTERNS = [
+  { pattern: /Controller/i, role: "API Logic" },
+  { pattern: /Handler/i, role: "API Logic" },
+  { pattern: /Route/i, role: "API Logic" },
+  { pattern: /Endpoint/i, role: "API Logic" },
+  { pattern: /Resolver/i, role: "API Logic" },
+  { pattern: /Service/i, role: "Business Logic" },
+  { pattern: /UseCase/i, role: "Business Logic" },
+  { pattern: /Manager/i, role: "Business Logic" },
+  { pattern: /Provider/i, role: "Business Logic" },
+  { pattern: /Interactor/i, role: "Business Logic" },
+  { pattern: /Repository/i, role: "Database" },
+  { pattern: /Entity/i, role: "Database" },
+  { pattern: /Model/i, role: "Database" },
+  { pattern: /Schema/i, role: "Database" },
+  { pattern: /Dao/i, role: "Database" },
+  { pattern: /Component/i, role: "UI" },
+  { pattern: /View/i, role: "UI" },
+  { pattern: /Page/i, role: "UI" },
+  { pattern: /Screen/i, role: "UI" },
+  { pattern: /Widget/i, role: "UI" },
+  { pattern: /Middleware/i, role: "Security / Middleware" },
+  { pattern: /Auth/i, role: "Security" },
+  { pattern: /Guard/i, role: "Security" },
+  { pattern: /Interceptor/i, role: "Security" },
+  { pattern: /Util/i, role: "Utility" },
+  { pattern: /Helper/i, role: "Utility" },
+  { pattern: /Config/i, role: "Config" },
+  { pattern: /Settings/i, role: "Config" },
+];
+
+export const ROLE_EVIDENCE_WEIGHTS = {
+  signal: 35,
+  folder: 30,
+  filename: 30,
+  extension: 15,
+};
+
+export const ARCHITECTURAL_PATTERN_RULES = [
+  {
+    name: "MVC (Model-View-Controller)",
+    evaluators: [
+      {
+        check: ({ hasControllerFolder, hasApi }) => hasControllerFolder || hasApi,
+        weight: 25,
+        rationale: "Controller / API route layer present",
+      },
+      {
+        check: ({ hasModelFolder, hasDb }) => hasModelFolder || hasDb,
+        weight: 25,
+        rationale: "Model / Database layer present",
+      },
+      {
+        check: ({ hasViewFolder, hasUi }) => hasViewFolder || hasUi,
+        weight: 25,
+        rationale: "View / UI component layer present",
+      },
+      {
+        check: ({ hasApi, hasDb, hasUi }) => hasApi && hasDb && hasUi,
+        weight: 25,
+        rationale: "Integrated Model, View, and Controller code signals present",
+      },
+    ],
+  },
+  {
+    name: "Clean / Layered Architecture",
+    evaluators: [
+      {
+        check: ({ hasDomainFolder, hasBiz }) => hasDomainFolder || hasBiz,
+        weight: 30,
+        rationale: "Domain / Business Logic layer present",
+      },
+      {
+        check: ({ hasModelFolder, hasDb }) => hasModelFolder || hasDb,
+        weight: 25,
+        rationale: "Repository / Database Entity layer present",
+      },
+      {
+        check: ({ hasControllerFolder, hasApi }) => hasControllerFolder || hasApi,
+        weight: 25,
+        rationale: "API Controller / Gateway layer present",
+      },
+      {
+        check: ({ hasBiz, hasDb, hasApi }) => hasBiz && hasDb && hasApi,
+        weight: 20,
+        rationale: "Clear separation between Domain, Persistence, and Presentation layers",
+      },
+    ],
+  },
+  {
+    name: "Fullstack Application",
+    evaluators: [
+      {
+        check: ({ hasUi }) => hasUi,
+        weight: 30,
+        rationale: "Frontend UI component signals detected",
+      },
+      {
+        check: ({ hasApi, hasDb }) => hasApi || hasDb,
+        weight: 30,
+        rationale: "Backend API or Database layer detected",
+      },
+      {
+        check: ({ isFullstackType }) => isFullstackType,
+        weight: 25,
+        rationale: "Manifest dependencies indicate Fullstack frameworks",
+      },
+      {
+        check: ({ hasUi, hasApi, hasDb }) => hasUi && (hasApi || hasDb),
+        weight: 15,
+        rationale: "Co-located UI and Server infrastructure",
+      },
+    ],
+  },
+  {
+    name: "Component-Driven Frontend",
+    evaluators: [
+      {
+        check: ({ hasUi }) => hasUi,
+        weight: 40,
+        rationale: "Dominated by UI component hierarchy",
+      },
+      {
+        check: ({ isFrontendType }) => isFrontendType,
+        weight: 30,
+        rationale: "Manifest dependencies indicate Frontend framework",
+      },
+      {
+        check: ({ hasApi, hasDb }) => !hasApi && !hasDb,
+        weight: 30,
+        rationale: "Absence of backend server & database persistence layers",
+      },
+    ],
+  },
+  {
+    name: "API Service / REST API",
+    evaluators: [
+      {
+        check: ({ hasApi, hasControllerFolder }) => hasApi || hasControllerFolder,
+        weight: 40,
+        rationale: "API controllers / HTTP route handlers present",
+      },
+      {
+        check: ({ isBackendType }) => isBackendType,
+        weight: 30,
+        rationale: "Manifest dependencies indicate Backend web framework",
+      },
+      {
+        check: ({ hasDb }) => hasDb,
+        weight: 20,
+        rationale: "Database ORM / data storage present",
+      },
+      {
+        check: ({ hasUi }) => !hasUi,
+        weight: 10,
+        rationale: "No frontend UI components present",
+      },
+    ],
+  },
+];
+
+
+

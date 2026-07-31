@@ -95,3 +95,26 @@ export const MANIFEST_FILES = [
   { name: "Dockerfile", ecosystem: "Docker" },
   { name: "docker-compose.yml", ecosystem: "Docker Compose" },
 ];
+
+export const FRAMEWORK_ALIASES = {
+  react: ["react", "next.js", "next", "remix"],
+  express: ["express", "nestjs", "@nestjs/core", "fastify"],
+  fastapi: ["fastapi", "flask", "python"],
+  django: ["django"],
+  "spring boot": ["spring-boot", "spring", "quarkus", "micronaut"],
+  gin: ["gin-gonic/gin", "gin", "fiber", "echo"],
+  "actix web": ["actix-web", "actix", "axum"],
+  laravel: ["laravel", "symfony"],
+  "ruby on rails": ["rails", "sinatra"],
+  "asp.net": ["asp.net", "c#", "dotnet", "microsoft.aspnetcore"],
+  "mongodb / mongoose": ["mongoose", "mongodb"],
+  sqlalchemy: ["sqlalchemy"],
+  hibernate: ["hibernate", "spring"],
+  gorm: ["gorm"],
+  prisma: ["prisma"],
+  "entity framework": ["entity framework", "entityframework", "efcore"],
+  "vue.js": ["vue", "nuxt"],
+  angular: ["angular", "@angular/core"],
+  "tailwind css": ["tailwindcss", "tailwind"],
+};
+
