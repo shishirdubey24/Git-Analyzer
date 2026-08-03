@@ -66,7 +66,7 @@ export const analyzeRepo = async (repoPath) => {
   // Step 6: Architecture Layer Classification
   let architecture = {};
   try {
-    architecture = classifyArchitecture(signals.fileSignals, sampledFiles, {
+    architecture = classifyArchitecture(signals, sampledFiles, {
       dependencies,
       context,
       repoRoot: repoPath,
