@@ -1,5 +1,4 @@
 import path from "path";
-import { SIGNAL_CATEGORIES } from "../Registries/SignalRules.js";
 import {
   FOLDER_INTENT_MAP,
   FILENAME_ROLE_PATTERNS,
@@ -8,12 +7,41 @@ import {
 } from "../Registries/FilePatterns.js";
 
 /**
- * Normalizes input signals to handle both raw fileSignals object or full Step 5 output object.
+ * Normalizes Step 5 output to its per-file semantic summaries.
+ *
+ * The production handoff uses `fileLevelSummary`, so category mapping is
+ * performed once in Step 5. Older complete Step 5 payloads with only
+ * `detectedSignals` are also accepted because they already contain categories.
  */
-export const normalizeSignals = (signalsInput) => {
+export const normalizeFileSummaries = (signalsInput) => {
   if (!signalsInput) return {};
-  if (signalsInput.fileSignals) return signalsInput.fileSignals;
-  return signalsInput;
+  if (signalsInput.fileLevelSummary) return signalsInput.fileLevelSummary;
+
+  const detectedSignals = signalsInput.detectedSignals || {};
+  const summaries = {};
+  for (const [fileKey, details] of Object.entries(detectedSignals)) {
+    const categoryCounts = {};
+    let totalHits = 0;
+    let weightedConfidence = 0;
+    (details || []).forEach((detail) => {
+      const count = detail.count || 0;
+      categoryCounts[detail.category] =
+        (categoryCounts[detail.category] || 0) + count;
+      totalHits += count;
+      weightedConfidence += (detail.confidence || 0) * count;
+    });
+
+    const categories = Object.entries(categoryCounts);
+    const primaryCategory =
+      categories.sort(([, a], [, b]) => b - a)[0]?.[0] || "Utility";
+    summaries[fileKey] = {
+      primaryCategory,
+      categoryCounts,
+      confidence: totalHits ? weightedConfidence / totalHits : 0,
+      details,
+    };
+  }
+  return summaries;
 };
 
 /**
@@ -66,14 +94,25 @@ export const inferExtensionRole = (fileName) => {
  */
 export const classifyFile = (
   fileName,
-  signalsList = [],
+  fileSignalSummary = {},
   fullPath = "",
   extraContext = {},
 ) => {
+  // Step 5 owns signal-to-category mapping and semantic confidence.
+  const categoryCounts = fileSignalSummary.categoryCounts || {};
   const signalCategories = new Set();
-  (signalsList || []).forEach((sig) => {
-    const cat = SIGNAL_CATEGORIES[sig];
-    if (cat && cat !== "Debug" && cat !== "Risk" && cat !== "Maintenance") {
+  const primaryCategory = fileSignalSummary.primaryCategory;
+  if (
+    primaryCategory &&
+    primaryCategory !== "Utility" &&
+    primaryCategory !== "Debug" &&
+    primaryCategory !== "Risk" &&
+    primaryCategory !== "Maintenance"
+  ) {
+    signalCategories.add(primaryCategory);
+  }
+  Object.keys(categoryCounts).forEach((cat) => {
+    if (cat !== "Debug" && cat !== "Risk" && cat !== "Maintenance") {
       signalCategories.add(cat);
     }
   });
@@ -154,17 +193,23 @@ export const classifyFile = (
 
   const roleEvidence = evidenceMap[primaryRole] || evidenceMap[extRole] || [];
 
-  // Calculate evidence-derived explainable confidence score
-  let confidence = 0.4;
+  // Structural confidence adjusts Step 5's semantic confidence; it does not
+  // replace it with a second independent confidence model.
+  let structuralConfidence = 0.4;
   if (maxScore >= 65) {
-    confidence = 0.95;
+    structuralConfidence = 0.95;
   } else if (maxScore >= 50) {
-    confidence = 0.85;
+    structuralConfidence = 0.85;
   } else if (maxScore >= 30) {
-    confidence = 0.70;
+    structuralConfidence = 0.70;
   } else if (maxScore >= 15) {
-    confidence = 0.50;
+    structuralConfidence = 0.50;
   }
+
+  const semanticConfidence = Number(fileSignalSummary.confidence);
+  const confidence = Number.isFinite(semanticConfidence) && semanticConfidence > 0
+    ? semanticConfidence * 0.6 + structuralConfidence * 0.4
+    : structuralConfidence;
 
   return {
     fileName,
@@ -172,6 +217,9 @@ export const classifyFile = (
     confidence: parseFloat(confidence.toFixed(2)),
     evidence: roleEvidence,
     detectedSignalCategories: Array.from(signalCategories),
+    semanticConfidence: Number.isFinite(semanticConfidence) && semanticConfidence > 0
+      ? parseFloat(semanticConfidence.toFixed(2))
+      : null,
   };
 };
 
@@ -292,7 +340,7 @@ export const classifyArchitecture = (
   sampledFilePaths = [],
   extraContext = {},
 ) => {
-  const fileSignals = normalizeSignals(signalsInput);
+  const fileLevelSummary = normalizeFileSummaries(signalsInput);
   const fileRoles = {};
   const fileDetails = {};
   const layerDistribution = {};
@@ -317,12 +365,17 @@ export const classifyArchitecture = (
 
   const processedKeys = new Set();
 
-  for (const [fileKey, signals] of Object.entries(fileSignals)) {
+  for (const [fileKey, fileSignalSummary] of Object.entries(fileLevelSummary)) {
     const fullPath = relKeyToFullPathMap.get(fileKey) || fileKey;
     const fileName = path.basename(fullPath);
     const relKey = getRelKey(fullPath);
 
-    const classified = classifyFile(fileName, signals, fullPath, extraContext);
+    const classified = classifyFile(
+      fileName,
+      fileSignalSummary,
+      fullPath,
+      extraContext,
+    );
     fileRoles[relKey] = classified.role;
     fileDetails[relKey] = classified;
     layerDistribution[classified.role] =
@@ -334,7 +387,7 @@ export const classifyArchitecture = (
     const relKey = getRelKey(fullPath);
     if (!processedKeys.has(relKey)) {
       const fileName = path.basename(fullPath);
-      const classified = classifyFile(fileName, [], fullPath, extraContext);
+      const classified = classifyFile(fileName, {}, fullPath, extraContext);
       fileRoles[relKey] = classified.role;
       fileDetails[relKey] = classified;
       layerDistribution[classified.role] =
