@@ -44,8 +44,15 @@ export const isMinifiedOrGenerated = (content) => {
  * Normalizes framework strings using registry data (FRAMEWORK_ALIASES).
  * Completely technology-agnostic algorithm.
  */
-export const isFrameworkAligned = (signalFramework, detectedFrameworks = []) => {
-  if (!signalFramework || !detectedFrameworks || detectedFrameworks.length === 0) {
+export const isFrameworkAligned = (
+  signalFramework,
+  detectedFrameworks = [],
+) => {
+  if (
+    !signalFramework ||
+    !detectedFrameworks ||
+    detectedFrameworks.length === 0
+  ) {
     return false;
   }
 
@@ -76,7 +83,7 @@ export const calculateSignalConfidence = (
   }
 
   if (count > 2) {
-    confidence += 0.10;
+    confidence += 0.1;
   } else if (count === 1 && !hasFrameworkAlignment) {
     confidence -= 0.05;
   }
@@ -146,7 +153,7 @@ export const extractSignals = async (
             confidence,
             frameworkAlignment: hasFrameworkAlignment,
           });
-
+          // add count,confidence,1 into pattern to get these 3 variable result
           signalTotals[patternName] = (signalTotals[patternName] || 0) + count;
           confidenceSumMap[patternName] =
             (confidenceSumMap[patternName] || 0) + confidence;
@@ -154,11 +161,11 @@ export const extractSignals = async (
             (confidenceCountMap[patternName] || 0) + 1;
         }
       }
-
+      // loop ends for one pattern here,after this we are collecting the info for whole file not for any one pattern
       if (fileSignalNames.length > 0) {
         fileSignals[relKey] = fileSignalNames;
         detectedSignals[relKey] = fileSignalDetails;
-
+        //categoryCounts is having category of each file for for all files category list would be saved here
         const categoryCounts = {};
         fileSignalDetails.forEach((d) => {
           categoryCounts[d.category] =
@@ -174,10 +181,24 @@ export const extractSignals = async (
           }
         }
 
+        const totalHits = fileSignalDetails.reduce((sum, detail) => {
+          return sum + detail.count;
+        }, 0);
+        const semanticConfidence = totalHits
+          ? fileSignalDetails.reduce(
+              (sum, detail) => sum + detail.confidence * detail.count,
+              0,
+            ) / totalHits
+          : 0;
+
         fileLevelSummary[relKey] = {
           signalsCount: fileSignalNames.length,
           primaryCategory: primaryCat,
-          totalHits: fileSignalDetails.reduce((a, b) => a + b.count, 0),
+          categoryCounts,
+          totalHits,
+          // The semantic confidence belongs to signal extraction. Step 6 may
+          // adjust it with structural evidence, but must not recompute it.
+          confidence: parseFloat(semanticConfidence.toFixed(2)),
           details: fileSignalDetails,
         };
       }
