@@ -39,11 +39,7 @@ export const SIGNAL_PATTERNS = {
   "Hardcoded Secrets": /(api_key|secret|password|private_key)\s*[:=]\s*['"][^'"]{6,}['"]/gi,
 
   // --- LOGGING & CODE QUALITY ---
-  "Console Log": /console\.(log|info|warn|error)\s*\(/g,
-  "Python Print": /\bprint\s*\(/g,
-  "Java System Output": /System\.out\.print(ln)?\s*\(/g,
-  "Go Print": /fmt\.(Print|Println|Printf)\s*\(/g,
-  TODO: /(\/\/\s*TODO|\#\s*TODO|\/\*\s*TODO)/g,
+  // (Debug and maintenance markers removed to focus strictly on architectural signals)
 };
 
 export const SIGNAL_CATEGORIES = {
@@ -74,12 +70,7 @@ export const SIGNAL_CATEGORIES = {
   "Entity Framework C#": "Database",
 
   Authentication: "Security",
-  "Console Log": "Debug",
-  "Python Print": "Debug",
-  "Java System Output": "Debug",
-  "Go Print": "Debug",
   "Hardcoded Secrets": "Risk",
-  TODO: "Maintenance",
 };
 
 export const SIGNAL_METADATA = {
@@ -111,9 +102,4 @@ export const SIGNAL_METADATA = {
 
   Authentication: { weight: 0.80 },
   "Hardcoded Secrets": { weight: 0.90 },
-  "Console Log": { weight: 0.60 },
-  "Python Print": { weight: 0.60 },
-  "Java System Output": { weight: 0.60 },
-  "Go Print": { weight: 0.60 },
-  TODO: { weight: 0.50 },
 };

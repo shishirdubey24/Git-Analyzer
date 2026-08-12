@@ -202,7 +202,7 @@ export const selectDiverseFiles = (scoredFiles, maxSamples) => {
     }
   }
 
-  return selected.map((f) => f.path);
+  return selected;
 };
 
 /**
@@ -215,5 +215,9 @@ export const sampleFiles = (structure, context = {}, options = {}) => {
   if (!allFiles.length) return [];
 
   const scoredFiles = allFiles.map((f) => scoreFile(f, context, structure));
-  return selectDiverseFiles(scoredFiles, maxSamples);
+  const selected = selectDiverseFiles(scoredFiles, maxSamples);
+  return {
+    paths: selected.map((f) => f.path),
+    details: selected
+  };
 };

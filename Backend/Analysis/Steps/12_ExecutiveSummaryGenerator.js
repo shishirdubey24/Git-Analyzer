@@ -73,21 +73,46 @@ export const generateExecutiveSummary = (analysisPayload) => {
   }
 
   // STRENGTHS & TECHNICAL DEBT
-  const strengths = [];
-  const technicalDebt = [];
+  const isFrontend = dependencies.projectType === "Frontend" || dependencies.projectType === "Fullstack";
+  const isBackend = dependencies.projectType === "Backend" || dependencies.projectType === "Fullstack";
+  
+  const strengths = [
+    {
+      category: "Repository & Infrastructure",
+      points: [
+        `The repository is structured as a ${dependencies.projectType || "General Software"} application containing ${fileCount} files.`,
+        structure.entryPoints?.length ? `Identified ${structure.entryPoints.length} clear execution entry point(s), establishing a well-defined boot sequence.` : "Standard hierarchical structure established without explicit entry bloat.",
+        security.riskLevel === "LOW" ? "Clean security baseline: No critical credential leaks or hardcoded secrets detected in the root codebase." : "Standard logic flow established."
+      ]
+    },
+    {
+      category: "Frontend Architecture",
+      points: [
+        isFrontend ? `Powered by modern reactive frameworks or UI libraries.` : "No major frontend frameworks detected (potentially a backend-only service).",
+        architecture.layerDistribution?.UI ? `Clear separation of concerns: ~${architecture.layerDistribution.UI} UI-centric components/files mapped.` : "UI components integrated directly or natively.",
+        dependencies.categoriesFound?.["UI / Styling"] ? "Maintains a structured styling and UI component ecosystem." : "Utilizes native styling paradigms."
+      ]
+    },
+    {
+      category: "Backend & Logic",
+      points: [
+        isBackend ? `Backend architecture leverages robust logic patterns and routing paradigms.` : "No dedicated backend framework detected (potentially a static or frontend-only app).",
+        architecture.layerDistribution?.API ? `API layer clearly delineated with ~${architecture.layerDistribution.API} route or controller definitions.` : "API logic distributed across modules or externalized.",
+        testing.hasCICD ? `CI/CD integration (${testing.cicdTools.join(", ")}) detected for reliable deployments.` : "Manual or external deployment strategies utilized."
+      ]
+    },
+    {
+      category: "Data Layer",
+      points: [
+        dependencies.hasDatabaseDeps
+          ? "Database infrastructure explicitly configured via dependencies (ORM or Drivers detected)."
+          : "No explicit database or ORM dependencies found; project is likely stateless, API-driven, or utilizing external data layers.",
+        architecture.layerDistribution?.Database ? `Data layer structure contains ~${architecture.layerDistribution.Database} models or schemas.` : "Data schemas are defined dynamically or handled externally."
+      ]
+    }
+  ];
 
-  if (structure.entryPoints && structure.entryPoints.length > 0) {
-    strengths.push(`Identified ${structure.entryPoints.length} clear execution entry point(s).`);
-  }
-  if (testing.hasTests) {
-    strengths.push(`Automated test suite detected (${testing.testFiles.length} test file(s)).`);
-  }
-  if (testing.hasCICD) {
-    strengths.push(`CI/CD automated pipeline integration detected (${testing.cicdTools.join(", ")}).`);
-  }
-  if (security.riskLevel === "LOW") {
-    strengths.push("No critical security credential leaks detected.");
-  }
+  const technicalDebt = [];
 
   if (!testing.hasTests) {
     technicalDebt.push("Absence of automated unit/integration test coverage.");

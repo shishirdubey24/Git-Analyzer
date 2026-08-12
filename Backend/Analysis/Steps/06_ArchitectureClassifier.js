@@ -201,15 +201,16 @@ export const classifyFile = (
   } else if (maxScore >= 50) {
     structuralConfidence = 0.85;
   } else if (maxScore >= 30) {
-    structuralConfidence = 0.70;
+    structuralConfidence = 0.7;
   } else if (maxScore >= 15) {
-    structuralConfidence = 0.50;
+    structuralConfidence = 0.5;
   }
 
   const semanticConfidence = Number(fileSignalSummary.confidence);
-  const confidence = Number.isFinite(semanticConfidence) && semanticConfidence > 0
-    ? semanticConfidence * 0.6 + structuralConfidence * 0.4
-    : structuralConfidence;
+  const confidence =
+    Number.isFinite(semanticConfidence) && semanticConfidence > 0
+      ? semanticConfidence * 0.6 + structuralConfidence * 0.4
+      : structuralConfidence;
 
   return {
     fileName,
@@ -217,9 +218,10 @@ export const classifyFile = (
     confidence: parseFloat(confidence.toFixed(2)),
     evidence: roleEvidence,
     detectedSignalCategories: Array.from(signalCategories),
-    semanticConfidence: Number.isFinite(semanticConfidence) && semanticConfidence > 0
-      ? parseFloat(semanticConfidence.toFixed(2))
-      : null,
+    semanticConfidence:
+      Number.isFinite(semanticConfidence) && semanticConfidence > 0
+        ? parseFloat(semanticConfidence.toFixed(2))
+        : null,
   };
 };
 
@@ -297,8 +299,9 @@ export const inferArchitecturalPattern = (
   }
 
   // Calculate folder coherence average
-  const coherenceValues = Object.values(folderStructureIntent || {})
-    .map((s) => parseFloat(s.coherence) || 0);
+  const coherenceValues = Object.values(folderStructureIntent || {}).map(
+    (s) => parseFloat(s.coherence) || 0,
+  );
   const avgCoherence =
     coherenceValues.length > 0
       ? coherenceValues.reduce((a, b) => a + b, 0) / coherenceValues.length

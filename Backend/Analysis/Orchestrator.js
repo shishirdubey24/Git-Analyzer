@@ -46,10 +46,10 @@ export const analyzeRepo = async (repoPath) => {
   }
 
   // Step 4: Intelligent File Sampling
-  let sampledFiles = [];
+  let sampledFilesResult = { paths: [], details: [] };
   try {
-    sampledFiles = sampleFiles(structure, context);
-    console.log(`[Orchestrator] Step 4 Complete: Sampled ${sampledFiles.length} files.`);
+    sampledFilesResult = sampleFiles(structure, context);
+    console.log(`[Orchestrator] Step 4 Complete: Sampled ${sampledFilesResult.paths.length} files.`);
   } catch (err) {
     console.error("[Orchestrator Warning] Step 4 failed:", err.message);
   }
@@ -57,7 +57,7 @@ export const analyzeRepo = async (repoPath) => {
   // Step 5: Multi-Language Signal Extraction
   let signals = { fileSignals: {}, signalTotals: {} };
   try {
-    signals = await extractSignals(sampledFiles, dependencies, repoPath);
+    signals = await extractSignals(sampledFilesResult.paths, dependencies, repoPath);
     console.log("[Orchestrator] Step 5 Complete: Code Signals Extracted.");
   } catch (err) {
     console.error("[Orchestrator Warning] Step 5 failed:", err.message);
@@ -66,7 +66,7 @@ export const analyzeRepo = async (repoPath) => {
   // Step 6: Architecture Layer Classification
   let architecture = {};
   try {
-    architecture = classifyArchitecture(signals, sampledFiles, {
+    architecture = classifyArchitecture(signals, sampledFilesResult.paths, {
       dependencies,
       context,
       repoRoot: repoPath,
@@ -79,7 +79,7 @@ export const analyzeRepo = async (repoPath) => {
   // Step 7: Complexity Metrics
   let complexity = {};
   try {
-    complexity = await calculateComplexity(sampledFiles, repoPath);
+    complexity = await calculateComplexity(sampledFilesResult.paths, repoPath);
     console.log("[Orchestrator] Step 7 Complete: Complexity Metrics Calculated.");
   } catch (err) {
     console.error("[Orchestrator Warning] Step 7 failed:", err.message);
@@ -132,10 +132,19 @@ export const analyzeRepo = async (repoPath) => {
     structure,
     codeQuality: {
       sampling: {
-        totalFilesScanned: sampledFiles.length,
-        files: sampledFiles.map((f) => f.replace(repoPath, "").replace(/^[\/\\]/, "")),
+        totalFilesScanned: sampledFilesResult.paths.length,
+        files: sampledFilesResult.paths.map((f) => f.replace(repoPath, "").replace(/^[\/\\]/, "")),
+        details: sampledFilesResult.details.map((f) => ({
+          path: f.path.replace(repoPath, "").replace(/^[\/\\]/, ""),
+          score: f.score,
+          size: f.size,
+          isCritical: f.isCritical,
+          isEntry: f.isEntry,
+          parentFolder: f.parentFolder,
+        })),
       },
       signals: signals.fileSignals,
+      signalDetails: signals,
       complexity,
       entryPointHealth: documentation.entryPointHygiene || {},
     },
