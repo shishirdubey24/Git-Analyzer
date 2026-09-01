@@ -16,7 +16,7 @@ const ReportPage = () => {
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [result, setResult] = useState(null);
+    const [analysis, setAnalysis] = useState(null);
 
     useEffect(() => {
         if (!url) {
@@ -24,26 +24,40 @@ const ReportPage = () => {
             return;
         }
 
+        let cancelled = false;
+
         const runAnalysis = async () => {
             setLoading(true);
             setError(null);
+            setAnalysis(null);
+
             try {
                 const data = await analyzeRepository(url);
-                console.log("Analysis Result:", data);
+                if (cancelled) return;
+
+                // Backend controller responds with { Success, Analysis }.
+                // Analysis itself is the v2 payload:
+                // { meta, context, dependencies, structure, codeQuality,
+                //   architecture, security, testing, documentation, critique, summary }
                 if (data && data.Analysis) {
-                    setResult(data);
+                    setAnalysis(data.Analysis);
                 } else {
                     setError("The server returned an empty analysis result. The repository might be empty or unsupported.");
                 }
             } catch (err) {
+                if (cancelled) return;
                 console.error("Analysis Error:", err);
-                setError(err.error || err.message || "Analysis failed. Please check the URL.");
+                setError(err?.details || err?.error || err?.message || "Analysis failed. Please check the URL.");
             } finally {
-                setLoading(false);
+                if (!cancelled) setLoading(false);
             }
         };
 
         runAnalysis();
+
+        return () => {
+            cancelled = true;
+        };
     }, [url, navigate]);
 
     if (loading) {
@@ -89,48 +103,46 @@ const ReportPage = () => {
         );
     }
 
-    if (result && result.Analysis) {
-        return (
-            <div className="min-h-screen bg-black text-stone-300 selection:bg-amber-600/30">
-                <motion.nav
-                    initial={{ y: -100, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    transition={{ duration: 0.6 }}
-                    className="bg-black/95 backdrop-blur-xl px-6 py-4 flex items-center justify-between sticky top-0 z-50 border-none"
-                >
-                    <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate("/home")}>
-                        <motion.div
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="w-8 h-8 bg-gradient-to-br from-amber-600 to-amber-800 rounded-lg flex items-center justify-center shadow-amber-900/20 shadow-lg"
-                        >
-                            <RiFlashlightLine className="w-5 h-5 text-stone-50" />
-                        </motion.div>
-                        <h1 className="text-2xl font-bold tracking-tight text-stone-100">
-                            Repo<span className="text-amber-600">Lens</span>
-                        </h1>
-                    </div>
-                    <motion.button
+    if (!analysis) return null;
+
+    return (
+        <div className="min-h-screen bg-black text-stone-300 selection:bg-amber-600/30">
+            <motion.nav
+                initial={{ y: -100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.6 }}
+                className="bg-black/95 backdrop-blur-xl px-6 py-4 flex items-center justify-between sticky top-0 z-50 border-none"
+            >
+                <div className="flex items-center gap-2 group cursor-pointer" onClick={() => navigate("/home")}>
+                    <motion.div
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => navigate("/home")}
-                        className="flex items-center gap-2 font-semibold uppercase tracking-wider text-stone-400 hover:text-amber-600 transition-all cursor-pointer"
+                        className="w-8 h-8 bg-gradient-to-br from-amber-600 to-amber-800 rounded-lg flex items-center justify-center shadow-amber-900/20 shadow-lg"
                     >
-                        <span>Scan New</span>
-                        <RiArrowRightLine className="w-5 h-5" />
-                    </motion.button>
-                </motion.nav>
-                <main className="p-6 md:p-10 max-w-7xl mx-auto">
-                    <ReportCard data={result.Analysis} />
-                </main>
-                <footer className="max-w-7xl mx-auto px-6 py-10 border-t border-amber-900/20 text-center text-stone-500 text-sm">
-                    © 2026 RepoLens. All rights reserved.
-                </footer>
-            </div>
-        );
-    }
-
-    return null;
+                        <RiFlashlightLine className="w-5 h-5 text-stone-50" />
+                    </motion.div>
+                    <h1 className="text-2xl font-bold tracking-tight text-stone-100">
+                        Repo<span className="text-amber-600">Lens</span>
+                    </h1>
+                </div>
+                <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => navigate("/home")}
+                    className="flex items-center gap-2 font-semibold uppercase tracking-wider text-stone-400 hover:text-amber-600 transition-all cursor-pointer"
+                >
+                    <span>Scan New</span>
+                    <RiArrowRightLine className="w-5 h-5" />
+                </motion.button>
+            </motion.nav>
+            <main className="p-6 md:p-10 max-w-7xl mx-auto">
+                <ReportCard data={analysis} />
+            </main>
+            <footer className="max-w-7xl mx-auto px-6 py-10 border-t border-amber-900/20 text-center text-stone-500 text-sm">
+                © 2026 RepoLens. All rights reserved.
+            </footer>
+        </div>
+    );
 };
 
 export default ReportPage;
